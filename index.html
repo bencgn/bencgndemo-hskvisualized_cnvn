@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>HSK Words Visualized</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header class="app-header">
+      <div>
+        <p class="eyebrow">HSK 1-6 Interactive Chart</p>
+        <h1>HSK Words Visualized</h1>
+      </div>
+      <div class="toolbar" aria-label="Chart controls">
+        <label class="search">
+          <span>Search</span>
+          <input id="searchInput" type="search" placeholder="汉字, pinyin, tiếng Việt" />
+        </label>
+        <div class="levels" id="levelFilters" aria-label="HSK level filters"></div>
+        <div class="zoom-controls" aria-label="Zoom controls">
+          <button id="zoomOutButton" type="button" title="Zoom out">-</button>
+          <button id="zoomInButton" type="button" title="Zoom in">+</button>
+        </div>
+        <button id="resetButton" type="button">Reset</button>
+      </div>
+    </header>
+
+    <main class="workspace">
+      <aside class="detail-panel" id="detailPanel" aria-live="polite">
+        <p class="panel-kicker">Selected word</p>
+        <div class="selected-hanzi" id="selectedHanzi">点</div>
+        <div class="selected-meta" id="selectedMeta">Click any tile in the chart</div>
+        <dl>
+          <dt>Pinyin</dt>
+          <dd id="selectedPinyin">diǎn</dd>
+          <dt>Tiếng Việt</dt>
+          <dd id="selectedVietnamese">chọn một ô để xem nghĩa tiếng Việt</dd>
+          <dt>English source</dt>
+          <dd id="selectedEnglish">point; dot; o'clock</dd>
+        </dl>
+      </aside>
+
+      <section class="chart-shell" aria-label="HSK word chart">
+        <div class="chart-head">
+          <div id="stats">Loading vocabulary...</div>
+          <div class="legend" id="legend"></div>
+        </div>
+        <div class="chart-scroll">
+          <div class="chart-map" id="chartMap"></div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="credits">
+      Data: complete-hsk-vocabulary (MIT), CVDICT (CC BY-SA 4.0). Visual reference:
+      hsk-words-visualized_page_1.png.
+    </footer>
+
+    <script src="app.js"></script>
+  </body>
+</html>
