@@ -255,9 +255,10 @@ dd {
   height: 1317px;
   padding: 8px;
   background: white;
-  zoom: var(--zoom, 0.58);
-  transform: translate(var(--pan-x, 0px), var(--pan-y, 0px));
+  transform: translate3d(var(--pan-x, 0px), var(--pan-y, 0px), 0) scale(var(--scale, 0.58));
   transform-origin: 0 0;
+  backface-visibility: hidden;
+  contain: layout paint style;
   will-change: transform;
 }
 

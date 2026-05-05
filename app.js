@@ -42,6 +42,7 @@ const selectedPinyin = document.querySelector("#selectedPinyin");
 const selectedVietnamese = document.querySelector("#selectedVietnamese");
 const selectedEnglish = document.querySelector("#selectedEnglish");
 const wordsByButton = new WeakMap();
+let viewportFrame = null;
 
 const joinMeanings = (items, fallback) => (items.length ? items.join("; ") : fallback);
 const clamp = (value, min, max) => Math.min(Math.max(value, min), max);
@@ -87,9 +88,13 @@ function clampViewport() {
 
 function applyViewport() {
   clampViewport();
-  chartMap.style.setProperty("--zoom", state.viewport.scale.toFixed(4));
-  chartMap.style.setProperty("--pan-x", `${state.viewport.x.toFixed(1)}px`);
-  chartMap.style.setProperty("--pan-y", `${state.viewport.y.toFixed(1)}px`);
+  if (viewportFrame !== null) return;
+  viewportFrame = requestAnimationFrame(() => {
+    viewportFrame = null;
+    chartMap.style.setProperty("--scale", state.viewport.scale.toFixed(4));
+    chartMap.style.setProperty("--pan-x", `${state.viewport.x.toFixed(1)}px`);
+    chartMap.style.setProperty("--pan-y", `${state.viewport.y.toFixed(1)}px`);
+  });
 }
 
 function zoomAt(pointX, pointY, zoomFactor) {
@@ -209,7 +214,8 @@ chartScroll.addEventListener(
     const rect = chartScroll.getBoundingClientRect();
     const pointX = event.clientX - rect.left;
     const pointY = event.clientY - rect.top;
-    const zoomFactor = Math.exp(-event.deltaY * 0.001);
+    const normalizedDelta = event.deltaMode === WheelEvent.DOM_DELTA_LINE ? event.deltaY * 16 : event.deltaY;
+    const zoomFactor = Math.exp(-clamp(normalizedDelta, -90, 90) * 0.0018);
     zoomAt(pointX, pointY, zoomFactor);
   },
   { passive: false },
