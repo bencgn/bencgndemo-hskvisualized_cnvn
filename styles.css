@@ -50,15 +50,7 @@ input {
 .brand {
   display: flex;
   align-items: center;
-  gap: 8px;
   min-width: 0;
-}
-
-.brand-mark {
-  width: 34px;
-  height: 34px;
-  object-fit: contain;
-  flex: 0 0 auto;
 }
 
 h1 {
@@ -371,11 +363,6 @@ dd {
     align-items: end;
     flex-direction: row;
     flex-wrap: wrap;
-  }
-
-  .brand-mark {
-    width: 28px;
-    height: 28px;
   }
 
   .brand-logo {
