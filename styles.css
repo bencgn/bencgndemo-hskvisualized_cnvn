@@ -337,7 +337,8 @@ dd {
 }
 
 .word-tile.is-hidden {
-  display: none;
+  visibility: hidden;
+  pointer-events: none;
 }
 
 .credits {
