@@ -253,9 +253,19 @@ dd {
   position: relative;
   width: 2617px;
   height: 1317px;
-  padding: 8px;
   background: white;
-  transform: translate3d(var(--pan-x, 0px), var(--pan-y, 0px), 0) scale(var(--scale, 0.58));
+  transform: translate3d(var(--pan-x, 0px), var(--pan-y, 0px), 0);
+  transform-origin: 0 0;
+  will-change: transform;
+}
+
+.chart-content {
+  position: relative;
+  width: 2617px;
+  height: 1317px;
+  padding: 8px;
+  zoom: var(--css-zoom, 1);
+  transform: scale(var(--transform-scale, 0.58));
   transform-origin: 0 0;
   backface-visibility: hidden;
   contain: layout paint style;

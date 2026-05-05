@@ -27,6 +27,7 @@ const state = {
 };
 
 const chartMap = document.querySelector("#chartMap");
+const chartContent = document.querySelector("#chartContent");
 const chartScroll = document.querySelector(".chart-scroll");
 const levelFilters = document.querySelector("#levelFilters");
 const legend = document.querySelector("#legend");
@@ -43,9 +44,12 @@ const selectedVietnamese = document.querySelector("#selectedVietnamese");
 const selectedEnglish = document.querySelector("#selectedEnglish");
 const wordsByButton = new WeakMap();
 let viewportFrame = null;
+let useCrispZoom = false;
 
 const joinMeanings = (items, fallback) => (items.length ? items.join("; ") : fallback);
 const clamp = (value, min, max) => Math.min(Math.max(value, min), max);
+const CRISP_ZOOM_IN = 1.35;
+const CRISP_ZOOM_OUT = 1.18;
 
 const searchableText = (word) =>
   [
@@ -91,7 +95,13 @@ function applyViewport() {
   if (viewportFrame !== null) return;
   viewportFrame = requestAnimationFrame(() => {
     viewportFrame = null;
-    chartMap.style.setProperty("--scale", state.viewport.scale.toFixed(4));
+    if (state.viewport.scale >= CRISP_ZOOM_IN) useCrispZoom = true;
+    if (state.viewport.scale <= CRISP_ZOOM_OUT) useCrispZoom = false;
+
+    const cssZoom = useCrispZoom ? state.viewport.scale : 1;
+    const transformScale = useCrispZoom ? 1 : state.viewport.scale;
+    chartContent.style.setProperty("--css-zoom", cssZoom.toFixed(4));
+    chartContent.style.setProperty("--transform-scale", transformScale.toFixed(4));
     chartMap.style.setProperty("--pan-x", `${state.viewport.x.toFixed(1)}px`);
     chartMap.style.setProperty("--pan-y", `${state.viewport.y.toFixed(1)}px`);
   });
@@ -144,7 +154,7 @@ function renderLevelControls(levels) {
 }
 
 function renderChart(data) {
-  chartMap.innerHTML = "";
+  chartContent.innerHTML = "";
   state.words = [];
 
   for (const level of data.levels) {
@@ -167,11 +177,11 @@ function renderChart(data) {
       state.words.push({ word, button });
     }
 
-    chartMap.append(section);
+    chartContent.append(section);
   }
 
   const firstWord = data.levels[0]?.words[0];
-  const firstButton = chartMap.querySelector(".word-tile");
+  const firstButton = chartContent.querySelector(".word-tile");
   if (firstWord && firstButton) setSelected(firstWord, firstButton);
   fitChart();
 }
