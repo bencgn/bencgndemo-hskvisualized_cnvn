@@ -45,6 +45,13 @@ const selectedEnglish = document.querySelector("#selectedEnglish");
 const wordsByButton = new WeakMap();
 let viewportFrame = null;
 let useCrispZoom = false;
+const activePointers = new Map();
+const pinch = {
+  distance: 0,
+  scale: 1,
+  contentX: 0,
+  contentY: 0,
+};
 
 const joinMeanings = (items, fallback) => (items.length ? items.join("; ") : fallback);
 const clamp = (value, min, max) => Math.min(Math.max(value, min), max);
@@ -114,6 +121,41 @@ function zoomAt(pointX, pointY, zoomFactor) {
   state.viewport.x = pointX - beforeX * state.viewport.scale;
   state.viewport.y = pointY - beforeY * state.viewport.scale;
   applyViewport();
+}
+
+const getPointerItems = () => [...activePointers.values()];
+const getPointerDistance = ([first, second]) => Math.hypot(first.x - second.x, first.y - second.y);
+const getPointerCenter = ([first, second]) => ({
+  x: (first.x + second.x) / 2,
+  y: (first.y + second.y) / 2,
+});
+
+function viewportPointFromClient(clientX, clientY) {
+  const rect = chartScroll.getBoundingClientRect();
+  return {
+    x: clientX - rect.left,
+    y: clientY - rect.top,
+  };
+}
+
+function beginSinglePointerPan(pointer) {
+  state.viewport.isPanning = true;
+  state.viewport.panActive = false;
+  state.viewport.startX = state.viewport.x;
+  state.viewport.startY = state.viewport.y;
+  state.viewport.pointerX = pointer.x;
+  state.viewport.pointerY = pointer.y;
+}
+
+function beginPinchZoom() {
+  const pointers = getPointerItems();
+  const center = getPointerCenter(pointers);
+  pinch.distance = getPointerDistance(pointers);
+  pinch.scale = state.viewport.scale;
+  pinch.contentX = (center.x - state.viewport.x) / state.viewport.scale;
+  pinch.contentY = (center.y - state.viewport.y) / state.viewport.scale;
+  state.viewport.panActive = true;
+  state.viewport.didPan = true;
 }
 
 function fitChart() {
@@ -242,22 +284,41 @@ zoomOutButton.addEventListener("click", () => {
 });
 
 chartScroll.addEventListener("pointerdown", (event) => {
-  if (event.button !== 0) return;
-  state.viewport.isPanning = true;
-  state.viewport.panActive = false;
-  state.viewport.didPan = false;
-  state.viewport.startX = state.viewport.x;
-  state.viewport.startY = state.viewport.y;
-  state.viewport.pointerX = event.clientX;
-  state.viewport.pointerY = event.clientY;
+  if (event.pointerType === "mouse" && event.button !== 0) return;
+  const point = viewportPointFromClient(event.clientX, event.clientY);
+  activePointers.set(event.pointerId, point);
   chartScroll.classList.add("is-panning");
   chartScroll.setPointerCapture(event.pointerId);
+
+  if (activePointers.size === 1) {
+    state.viewport.didPan = false;
+    beginSinglePointerPan(point);
+  } else if (activePointers.size === 2) {
+    beginPinchZoom();
+  }
 });
 
 chartScroll.addEventListener("pointermove", (event) => {
+  if (!activePointers.has(event.pointerId)) return;
+  activePointers.set(event.pointerId, viewportPointFromClient(event.clientX, event.clientY));
+
+  if (activePointers.size >= 2) {
+    const pointers = getPointerItems();
+    const center = getPointerCenter(pointers);
+    const distance = getPointerDistance(pointers);
+    if (pinch.distance <= 0) beginPinchZoom();
+    state.viewport.scale = clamp(pinch.scale * (distance / pinch.distance), 0.24, 5);
+    state.viewport.x = center.x - pinch.contentX * state.viewport.scale;
+    state.viewport.y = center.y - pinch.contentY * state.viewport.scale;
+    state.viewport.didPan = true;
+    applyViewport();
+    return;
+  }
+
   if (!state.viewport.isPanning) return;
-  const dx = event.clientX - state.viewport.pointerX;
-  const dy = event.clientY - state.viewport.pointerY;
+  const pointer = activePointers.get(event.pointerId);
+  const dx = pointer.x - state.viewport.pointerX;
+  const dy = pointer.y - state.viewport.pointerY;
   if (!state.viewport.panActive && Math.hypot(dx, dy) < 10) return;
   state.viewport.panActive = true;
   state.viewport.didPan = true;
@@ -267,11 +328,9 @@ chartScroll.addEventListener("pointermove", (event) => {
 });
 
 function stopPan(event) {
-  if (!state.viewport.isPanning) return;
-  const shouldSelectTile = !state.viewport.didPan;
-  state.viewport.isPanning = false;
-  state.viewport.panActive = false;
-  chartScroll.classList.remove("is-panning");
+  const wasTrackingPointer = activePointers.has(event.pointerId);
+  const shouldSelectTile = wasTrackingPointer && activePointers.size === 1 && !state.viewport.didPan;
+  activePointers.delete(event.pointerId);
 
   if (shouldSelectTile) {
     const target = document.elementFromPoint(event.clientX, event.clientY);
@@ -283,9 +342,22 @@ function stopPan(event) {
   if (chartScroll.hasPointerCapture(event.pointerId)) {
     chartScroll.releasePointerCapture(event.pointerId);
   }
-  setTimeout(() => {
-    state.viewport.didPan = false;
-  }, 0);
+
+  if (activePointers.size === 1) {
+    beginSinglePointerPan(getPointerItems()[0]);
+    state.viewport.didPan = true;
+    return;
+  }
+
+  if (activePointers.size === 0) {
+    state.viewport.isPanning = false;
+    state.viewport.panActive = false;
+    pinch.distance = 0;
+    chartScroll.classList.remove("is-panning");
+    setTimeout(() => {
+      state.viewport.didPan = false;
+    }, 0);
+  }
 }
 
 chartScroll.addEventListener("pointerup", stopPan);
